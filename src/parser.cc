@@ -174,8 +174,6 @@ void MCNPPTRACBinary::parsePTRACRecord()
     long nps = -1;
     long event = -1, oldEvent = -1;
     constexpr long lastEvent = 9000;
-    constexpr long terEvent = 5000;
-    constexpr long sourceEvent = 2030;
     long cell = -1;
 
     double px = 0.;
@@ -187,8 +185,9 @@ void MCNPPTRACBinary::parsePTRACRecord()
 
     std::string buffer = readRecord(ptracFile); // NPS line
     std::tie(nps, event) = reinterpretBuffer<long, long>(buffer);
-    if (event != sourceEvent)
+    if (!isBnkEvent(event))
     {
+        std::cout << "Event number: " << event << std::endl;
         throw std::logic_error("expected bank event at the start of the history");
     }
 
@@ -242,10 +241,26 @@ void MCNPPTRACBinary::parsePTRACRecord()
             // throw away the others
         }
         parHist.push_back(Event{nps, oldEvent, cell, {px,py,pz}, erg, wt, tme});
-        if (event == sourceEvent || event == lastEvent)
+        if (isBnkEvent(event) || event == lastEvent)
         {
             npsHistory.push_back(parHist);
             parHist = ParticleHistory();
         }
     }
+}
+
+bool isBnkEvent(const long& id)
+{   
+    if (std::abs(std::abs(id) - 2000) < 40 )
+    {
+        // debugging
+        if (std::abs(std::abs(id) - 2000) != 30 && 
+            std::abs(std::abs(id) - 2000) != 33)
+        {
+            std::cout << id << std::endl;
+        }
+        
+        return true;
+    }
+    return false;
 }

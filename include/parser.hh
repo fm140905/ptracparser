@@ -186,3 +186,4 @@ std::tuple<Ts...> reinterpretBuffer(std::string const &buffer)
   return reinterpretBuffer<Ts...>(stream);
 }
 
+bool isBnkEvent(const long& id);

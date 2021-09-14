@@ -1,3 +1,10 @@
+/*
+ * @Description: Main file for processing ptrac file.
+ * @Author: Ming Fang
+ * @Date: 2021-09-14 11:43:25
+ * @LastEditors: Ming Fang
+ * @LastEditTime: 2021-09-14 12:54:21
+ */
 #include <fstream>
 #include <string>
 #include <chrono>
@@ -8,7 +15,7 @@ int main(int argc, char** argv)
 {
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    const std::string outpath("/home/mingf2/projects/ptracparser/data/all_bin/pulses.txt");
+    const std::string outpath("pulses.txt");
     std::ofstream outfile;
     outfile.open(outpath, std::ios::out);
     if (!outfile.good())
@@ -16,13 +23,19 @@ int main(int argc, char** argv)
         throw std::invalid_argument("Cannot create file: " + outpath);
     }
 
-    MCNPPTRACBinary ptracFile("/home/mingf2/projects/ptracparser/data/all_bin/job.mcnp62_seq-1631550441/ptrac");
+    const std::string ptracFilePath(argv[1]);
+    MCNPPTRACBinary ptracFile(ptracFilePath);
     const int maxNum(1e6);
     int pulseIdx(0);
     std::vector<Pulse> pulses;
     // read pulses from file
+    int nps(0);
     while (ptracFile.readNextNPS(1e6))
     {
+        if (ptracFile.getNPSRead() % 1000 == 0)
+        {
+            std::cout << "NPS = " << ptracFile.getNPSRead() << '\n';
+        }
         const NPSHistory record = ptracFile.getNPSHistory();
         for (auto iter = record.begin(); iter != record.end(); iter++)
         {
