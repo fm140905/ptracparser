@@ -20,151 +20,24 @@
 *                                  *
 ************************************/
 
-MCNPPTRAC::MCNPPTRAC() : nbPointsRead(0)
+MCNPPTRAC::MCNPPTRAC() : npsRead(0)
 {
 }
 
-void MCNPPTRAC::incrementNbPointsRead()
+void MCNPPTRAC::incrementNPSRead()
 {
-    ++nbPointsRead;
+    ++npsRead;
 }
 
-long MCNPPTRAC::getNbPointsRead()
+long MCNPPTRAC::getNPSRead()
 {
-    return nbPointsRead;
+    return npsRead;
 }
 
-History const &MCNPPTRAC::getPTRACRecord() const
+NPSHistory const &MCNPPTRAC::getNPSHistory() const
 {
-    return history;
+    return npsHistory;
 }
-
-// /*****************************************
-// *                                       *
-// *  methods of the MCNPPTRACASCII class  *
-// *                                       *
-// *****************************************/
-
-// MCNPPTRACASCII::MCNPPTRACASCII(std::string const &ptracPath) : MCNPPTRAC(),
-//                                                                nbDataCellMaterialLine(0),
-//                                                                ptracFile(ptracPath)
-// {
-//     if (ptracFile.fail())
-//     {
-//         std::cerr << "PTRAC file " << ptracPath << " not found." << std::endl;
-//         exit(EXIT_FAILURE);
-//     }
-//     // The number of header lines must be 8!!
-//     goThroughHeaderPTRAC(8);
-// }
-
-// void MCNPPTRACASCII::getNextLinePtrac()
-// {
-//     getline(ptracFile, currentLine);
-// }
-
-// std::pair<int, int> MCNPPTRACASCII::readPointEvent()
-// {
-//     std::istringstream iss(currentLine);
-//     int pointID, eventID;
-//     iss >> pointID >> eventID;
-//     return {pointID, eventID};
-// }
-
-// std::pair<int, int> MCNPPTRACASCII::readCellMaterial()
-// {
-//     std::istringstream iss(currentLine);
-//     int dummy, volumeID, materialID;
-//     for (int ii = 1; ii <= nbDataCellMaterialLine - 2; ii++)
-//     {
-//         iss >> dummy;
-//     }
-//     iss >> volumeID >> materialID;
-//     return {volumeID, materialID};
-// }
-
-// std::vector<double> MCNPPTRACASCII::readPoint()
-// {
-//     std::istringstream iss(currentLine);
-//     double pointX, pointY, pointZ;
-//     iss >> pointX >> pointY >> pointZ;
-//     return {pointX, pointY, pointZ};
-// }
-
-// bool MCNPPTRACASCII::readNextPtracData(long maxReadPoint)
-// {
-//     if ((ptracFile && !ptracFile.eof()) && (getNbPointsRead() <= maxReadPoint))
-//     {
-//         getline(ptracFile, currentLine);
-//         if (!currentLine.empty())
-//         {
-//             auto const pointEvent = readPointEvent();
-//             getline(ptracFile, currentLine);
-//             auto const cellMaterial = readCellMaterial();
-//             getline(ptracFile, currentLine);
-//             auto const point = readPoint();
-//             incrementNbPointsRead();
-//             // TODO
-//             //   record = {pointEvent.first, pointEvent.second,
-//             //             cellMaterial.first, cellMaterial.second,
-//             //             point};
-//             return true;
-//         }
-//         else
-//         {
-//             return false;
-//         }
-//     }
-//     else
-//     {
-//         return false;
-//     }
-// }
-
-// void MCNPPTRACASCII::goThroughHeaderPTRAC(int nHeaderLines)
-// {
-//     std::string line5, line6;
-//     for (int ii = 0; ii < nHeaderLines; ii++)
-//     {
-//         getline(ptracFile, currentLine);
-//         if (ii == 5)
-//         {
-//             line5 = currentLine;
-//         }
-//         if (ii == 6)
-//         {
-//             line6 = currentLine;
-//         }
-//     }
-//     int nbData = getDataFromLine5Ptrac(line5);
-//     checkDataFromLine6Ptrac(line6, nbData);
-// }
-
-// int MCNPPTRACASCII::getDataFromLine5Ptrac(const std::string &line5)
-// {
-//     int nbDataPointEventLine;
-//     std::istringstream iss(line5);
-//     iss >> nbDataPointEventLine >> nbDataCellMaterialLine;
-//     int nbData = nbDataPointEventLine + nbDataCellMaterialLine;
-//     return nbData;
-// }
-
-// void MCNPPTRACASCII::checkDataFromLine6Ptrac(const std::string &line6, int nbData)
-// {
-//     std::vector<int> data(nbData);
-//     constexpr int cellIDPtracCode = 17;
-//     constexpr int materialIDPtracCode = 18;
-//     std::istringstream iss(line6);
-//     for (int jj = 0; jj < nbData; jj++)
-//     {
-//         iss >> data[jj];
-//     }
-//     if ((data[nbData - 2] != cellIDPtracCode) && (data[nbData - 1] != materialIDPtracCode))
-//     {
-//         std::cerr << "PTRAC file format not suitable. Please see Oracle/data/slapb file for example..." << std::endl;
-//         exit(EXIT_FAILURE);
-//     }
-// }
 
 /*****************************************
 *                                        *
@@ -182,12 +55,12 @@ MCNPPTRACBinary::MCNPPTRACBinary(std::string const &ptracPath) : ptracFile(ptrac
     parseHeader();
 }
 
-bool MCNPPTRACBinary::readNextPtracData(long maxReadPoint)
+bool MCNPPTRACBinary::readNextNPS(long maxReadHist)
 {
-    if ((ptracFile && ptracFile.peek() != EOF) && getNbPointsRead() <= maxReadPoint)
+    if ((ptracFile && ptracFile.peek() != EOF) && npsRead <= maxReadHist)
     {
         parsePTRACRecord();
-        incrementNbPointsRead();
+        incrementNPSRead();
         return true;
     }
     return false;
@@ -282,67 +155,26 @@ void MCNPPTRACBinary::parseVariableIDs()
 
     // throw away variable id on event lines, int
 
-    indices = PTRACRecordIndices { 0, // event type
-                                   5, // cell num
-                                   0, // x
-                                   1, // y
-                                   2, // z
-                                   6, // energy
-                                   7, // weight
-                                   8 // time
-                                   };
-    //   constexpr int eventID = 7;
-    //   constexpr int cellID = 17;
-    //   constexpr int
-    //   int eventIdx = -1;
-    //   int cellIdx = -1;
-    //   int matIdx = -1;
-    //   for (int i = 0; i < nbDataSrcLong; ++i) {
-    //     const int varID = std::get<0>(reinterpretBuffer<int>(bufferStream));
-    //     switch (varID) {
-    //     case eventID:
-    //       eventIdx = i;
-    //       break;
-    //     case cellID:
-    //       cellIdx = i;
-    //       break;
-    //     case matID:
-    //       matIdx = i;
-    //       break;
-    //     }
-    //   }
-
-    //   constexpr int pointXID = 20;
-    //   constexpr int pointYID = 21;
-    //   constexpr int pointZID = 22;
-    //   int pointXIdx = -1;
-    //   int pointYIdx = -1;
-    //   int pointZIdx = -1;
-    //   for (int i = 0; i < nbDataSrcDouble; ++i) {
-    //     const int varID = std::get<0>(reinterpretBuffer<int>(bufferStream));
-    //     switch (varID) {
-    //     case pointXID:
-    //       pointXIdx = i;
-    //       break;
-    //     case pointYID:
-    //       pointYIdx = i;
-    //       break;
-    //     case pointZID:
-    //       pointZIdx = i;
-    //       break;
-    //     }
-    //   }
-
-    //   indices = PTRACRecordIndices{eventIdx, cellIdx, matIdx, pointXIdx, pointYIdx, pointZIdx, nbDataSrcLong, nbDataSrcDouble};
+    indices = EventIndices{ 0, // event type
+                            5, // cell num
+                            0, // x
+                            1, // y
+                            2, // z
+                            6, // energy
+                            7, // weight
+                            8, // time
+                            idnum
+                            };
 }
 
 void MCNPPTRACBinary::parsePTRACRecord()
 {
-    history = History();
+    npsHistory = NPSHistory(0);
     
-    long point = -1;
+    long nps = -1;
     long event = -1, oldEvent = -1;
     constexpr long lastEvent = 9000;
+    constexpr long terEvent = 5000;
     constexpr long sourceEvent = 2030;
     long cell = -1;
 
@@ -354,12 +186,13 @@ void MCNPPTRACBinary::parsePTRACRecord()
     double tme = 0;
 
     std::string buffer = readRecord(ptracFile); // NPS line
-    std::tie(point, event) = reinterpretBuffer<long, long>(buffer);
+    std::tie(nps, event) = reinterpretBuffer<long, long>(buffer);
     if (event != sourceEvent)
     {
         throw std::logic_error("expected bank event at the start of the history");
     }
 
+    ParticleHistory parHist = ParticleHistory();
     while (event != lastEvent)
     {
         buffer = readRecord(ptracFile); // data line (all doubles, even though the
@@ -408,6 +241,11 @@ void MCNPPTRACBinary::parsePTRACRecord()
             }
             // throw away the others
         }
-        history.push_back(PTRACRecord{point, oldEvent, cell, {px,py,pz}, erg, wt, tme});
+        parHist.push_back(Event{nps, oldEvent, cell, {px,py,pz}, erg, wt, tme});
+        if (event == sourceEvent || event == lastEvent)
+        {
+            npsHistory.push_back(parHist);
+            parHist = ParticleHistory();
+        }
     }
 }

@@ -21,16 +21,27 @@
 #include <vector>
 #include <list>
 
-struct PTRACRecord {
-  long pointID, eventID;
+struct Event {
+  long nps, eventID;
   long cellID;
-  std::vector<double> point;
+  std::vector<double> pos;
   double energy;
   double weight;
   double time;
 };
 
-typedef std::list<PTRACRecord> History;
+/**
+ * @brief class of a single particle's history.
+ * consists of multiple events.
+ * 
+ */
+typedef std::list<Event> ParticleHistory;
+
+/**
+ * @brief class of all particles' histories in one nps simulation.
+ * 
+ */
+typedef std::vector<ParticleHistory> NPSHistory;
 
 struct VariableIDNum {
   long nbDataNPS;
@@ -46,7 +57,7 @@ struct VariableIDNum {
   long nbDataTerDouble;
 };
 
-struct PTRACRecordIndices {
+struct EventIndices {
   int event, cell, px, py, pz, erg, wt, tme;
   VariableIDNum idNum;
 };
@@ -54,116 +65,36 @@ struct PTRACRecordIndices {
 class MCNPPTRAC
 {
 protected:
-  long nbPointsRead;
-  // PTRACRecord record;
-  History history;
+  long npsRead;
+  // Event record;
+  NPSHistory npsHistory;
 
 public:
   MCNPPTRAC();
   virtual ~MCNPPTRAC(){};
 
   /**
-     * If the maximum number of read points has not been reached: reads the next
-     * particle, event, volume, material, position in PTRAC file.
+     * If the maximum number of histories has not been reached: reads the next
+     * history in PTRAC file.
      *
      * @returns true if successful, false otherwise.
      */
-  virtual bool readNextPtracData(long maxReadPoint) = 0;
+  virtual bool readNextNPS(long maxReadNPS) = 0;
 
   /**
-     * Increments the number of points read so far.
+     * Increments the number of histories read so far.
      */
-  void incrementNbPointsRead();
-  long getNbPointsRead();
+  void incrementNPSRead();
+  long getNPSRead();
 
-  History const &getPTRACRecord() const;
+  NPSHistory const &getNPSHistory() const;
 };
-
-// class MCNPPTRACASCII : public MCNPPTRAC
-// {
-// protected:
-//   std::string currentLine;
-//   int nbDataCellMaterialLine;
-//   std::ifstream ptracFile;
-
-// public:
-//   /**
-//      * @param[in] ptracPath MCNP ptrac file path.
-//      */
-//   MCNPPTRACASCII(std::string const &ptracPath);
-
-//   /**
-//      * If the maximum number of read points has not been reached: reads the next
-//      * particle, event, volume, material, position in PTRAC file.
-//      *
-//      * @returns true if successful, false otherwise.
-//      */
-//   bool readNextPtracData(long maxReadPoint);
-
-// protected:
-//   /**
-//      * Reads the header lines. Sets the current line at the last header line of PTRAC file.
-//      *
-//      * @param[in] nHeaderLines The number of header lines in the PTRAC file.
-//      */
-//   void goThroughHeaderPTRAC(int nHeaderLines);
-
-//   /**
-//      * Gets the number of data expected on 2nd line of each particle event data block.
-//      * If the PTRAC has the correct format, this information is found in the 5th
-//      * header line.
-//      *
-//      * @param[in] line5 The string containing the data of the 5th header line.
-//      * @return the number of integer data stored on the 2nd of each particle event
-//      * data block.
-//      */
-//   int getDataFromLine5Ptrac(const std::string &line5);
-
-//   /**
-//      * Checks that the 2nd line of each particle event data block does contain the
-//      * cell ID and the material ID. These information are respectively identified as
-//      * 17 and 18 by the PTRAC writer. The program exits if it is not the case.
-//      *
-//      * @param[in] line6 The string containing the data of the 6th header line.
-//      * @param[in] nbData The number of data expected on 2nd line of each particle
-//      * event data block (given by getDataFromLine5Ptrac function).
-//      */
-//   void checkDataFromLine6Ptrac(const std::string &line6, int nbData);
-
-//   /**
-//      * Reads the point ID number and the event ID number.
-//      *
-//      * @return A pair containing the point ID and event ID.
-//      */
-//   std::pair<int, int> readPointEvent();
-
-//   /**
-//      * Reads the cell ID number and the material ID number.
-//      *
-//      * @return a pair containing the volume ID and material ID.
-//      */
-//   std::pair<int, int> readCellMaterial();
-
-//   /**
-//      * Reads the point coordinates (x,y,z).
-//      *
-//      * @return the point coordinates as a vector of 3 doubles.
-//      */
-//   std::vector<double> readPoint();
-
-//   /**
-//      * Stores the next line in the PTRAC file in the currentLine variable.
-//      *
-//      *
-//      */
-//   void getNextLinePtrac();
-// };
 
 class MCNPPTRACBinary : public MCNPPTRAC
 {
 protected:
   std::ifstream ptracFile;
-  PTRACRecordIndices indices;
+  EventIndices indices;
 
 public:
   /**
@@ -172,12 +103,12 @@ public:
   MCNPPTRACBinary(std::string const &ptracPath);
 
   /**
-     * If the maximum number of read points has not been reached: reads the next
-     * particle, event, volume, material, position in PTRAC file.
+     * If the maximum number of histories has not been reached: reads the history
+     * in PTRAC file.
      *
      * @returns true if successful, false otherwise.
      */
-  bool readNextPtracData(long maxReadPoint);
+  bool readNextNPS(long maxReadNPS);
 
 protected:
   /**
