@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "PTRACFormat.hh"
 #include <fstream>
 #include <iostream>
 #include <map>
