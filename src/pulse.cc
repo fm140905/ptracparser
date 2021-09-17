@@ -1,3 +1,10 @@
+/*
+ * @Description: 
+ * @Author: Ming Fang
+ * @Date: 2021-09-14 11:43:25
+ * @LastEditors: Ming Fang
+ * @LastEditTime: 2021-09-17 13:53:14
+ */
 /**
  * @file pulse.cc
  * @author Ming Fang
@@ -33,10 +40,11 @@ Pulse::Pulse(const ParticleHistory& parHist)
         {
             pos[i] = (startPos[i] + endPos[i]) * 0.5;
         }
-        getLatticeIndex();
+        // getLatticeIndex();
     }
 }
 
+/*
 void Pulse::getLatticeIndex()
 {
     static const double r = 0.25; // radius of straw
@@ -68,7 +76,7 @@ void Pulse::getLatticeIndex()
     }
     latticeIndex = std::make_pair(i, j);
 }
-
+*/
 std::ostream &operator<<(std::ostream &os, const Pulse& p)
 {
     os << std::fixed << std::setprecision(6)
@@ -80,8 +88,8 @@ std::ostream &operator<<(std::ostream &os, const Pulse& p)
        << std::setw(12) << p.endPos[2]
        << std::setw(12) << p.energy
        << std::setw(24) << p.time
-       << std::setw(8) << p.latticeIndex.first
-       << std::setw(8) << p.latticeIndex.second
+    //    << std::setw(8) << p.latticeIndex.first
+    //    << std::setw(8) << p.latticeIndex.second
        << std::setw(12) << p.nps;
     return os;
 }

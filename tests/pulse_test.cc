@@ -31,7 +31,7 @@ TEST_F(PulseTest, FirstPulse)
     truth.endPos = std::vector<double>{ 9.63740, -0.75003, 8.76890};
     truth.energy = 0.31638;
     truth.time = 7.844400E+07;
-    truth.latticeIndex = std::make_pair(21, 33);
+    // truth.latticeIndex = std::make_pair(21, 33);
     truth.nps = 1;
 
     for (int i = 0; i < 3; i++)
@@ -44,8 +44,8 @@ TEST_F(PulseTest, FirstPulse)
     }
     EXPECT_NEAR(firstPulse.energy, truth.energy, 0.001);
     EXPECT_NEAR(firstPulse.time, truth.time, truth.time * 0.001);
-    EXPECT_EQ(firstPulse.latticeIndex.first, truth.latticeIndex.first);
-    EXPECT_EQ(firstPulse.latticeIndex.second, truth.latticeIndex.second);
+    // EXPECT_EQ(firstPulse.latticeIndex.first, truth.latticeIndex.first);
+    // EXPECT_EQ(firstPulse.latticeIndex.second, truth.latticeIndex.second);
 }
 
 TEST_F(PulseTest, MidPulse)
@@ -79,7 +79,7 @@ TEST_F(PulseTest, MidPulse)
     truth.endPos = std::vector<double>{9.47970, -6.99500, 7.49860};
     truth.energy = 0.39276;
     truth.time = 3.612400E+07;
-    truth.latticeIndex = std::make_pair(13, 37);
+    // truth.latticeIndex = std::make_pair(13, 37);
     truth.nps = 105;
 
     for (int i = 0; i < 3; i++)
@@ -92,8 +92,8 @@ TEST_F(PulseTest, MidPulse)
     }
     EXPECT_NEAR(midPulse.energy, truth.energy, 0.001);
     EXPECT_NEAR(midPulse.time, truth.time, truth.time * 0.001);
-    EXPECT_EQ(midPulse.latticeIndex.first, truth.latticeIndex.first);
-    EXPECT_EQ(midPulse.latticeIndex.second, truth.latticeIndex.second);
+    // EXPECT_EQ(midPulse.latticeIndex.first, truth.latticeIndex.first);
+    // EXPECT_EQ(midPulse.latticeIndex.second, truth.latticeIndex.second);
 }
 
 
@@ -128,7 +128,7 @@ TEST_F(PulseTest, LastPulse)
     truth.endPos = std::vector<double>{-10.21900, 4.76060, 2.08380};
     truth.energy = 0.50319;
     truth.time = 7.608400E+06;
-    truth.latticeIndex = std::make_pair(28, 8);
+    // truth.latticeIndex = std::make_pair(28, 8);
     truth.nps = 45609;
 
     for (int i = 0; i < 3; i++)
@@ -141,6 +141,6 @@ TEST_F(PulseTest, LastPulse)
     }
     EXPECT_NEAR(lastPulse.energy, truth.energy, 0.001);
     EXPECT_NEAR(lastPulse.time, truth.time, truth.time * 0.001);
-    EXPECT_EQ(lastPulse.latticeIndex.first, truth.latticeIndex.first);
-    EXPECT_EQ(lastPulse.latticeIndex.second, truth.latticeIndex.second);
+    // EXPECT_EQ(lastPulse.latticeIndex.first, truth.latticeIndex.first);
+    // EXPECT_EQ(lastPulse.latticeIndex.second, truth.latticeIndex.second);
 }
