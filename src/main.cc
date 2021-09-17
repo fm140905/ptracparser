@@ -53,7 +53,7 @@ int main(int argc, char** argv)
     }
 
     // write header
-    outfile << "#    x1(cm)      y1(cm)      z1(cm)      x2(cm)      y2(cm)      z2(cm)    energy(MeV)        time(shakes)       row    column        nps\n";
+    outfile << "#    x1(cm)      y1(cm)      z1(cm)      x2(cm)      y2(cm)      z2(cm)    energy(MeV)        time(shakes)           nps\n";
     // write pulses to file
     for (int i = 0; i < pulses.size(); i++)
     {

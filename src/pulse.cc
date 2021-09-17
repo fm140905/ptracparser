@@ -1,10 +1,3 @@
-/*
- * @Description: 
- * @Author: Ming Fang
- * @Date: 2021-09-14 11:43:25
- * @LastEditors: Ming Fang
- * @LastEditTime: 2021-09-17 13:53:14
- */
 /**
  * @file pulse.cc
  * @author Ming Fang
