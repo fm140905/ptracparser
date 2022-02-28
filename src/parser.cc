@@ -84,7 +84,7 @@ void MCNPPTRACBinary::skipPtracInputData()
 {
     std::string buffer = readRecord(ptracFile);
     std::stringstream bufferStream(buffer);
-    int n_fields_total = (int)readBinary<double>(bufferStream);
+    int n_fields_total = (int)readBinary<float>(bufferStream);
     int n_fields_read = 0;
     int n_desc = 0;
 
@@ -98,13 +98,13 @@ void MCNPPTRACBinary::skipPtracInputData()
         }
         if (n_desc == 0)
         {
-            n_desc = (int)readBinary<double>(bufferStream);
+            n_desc = (int)readBinary<float>(bufferStream);
             ++n_fields_read;
         }
         else
         {
             --n_desc;
-            readBinary<double>(bufferStream); // throw away field descriptor
+            readBinary<float>(bufferStream); // throw away field descriptor
         }
     }
 }
@@ -117,25 +117,25 @@ void MCNPPTRACBinary::parseVariableIDs()
     // number of variables on NPS line
     const int nbDataNPS = readBinary<int>(bufferStream);
     // number of variable on first line for an src event
-    const long nbDataSrcLong = readBinary<long>(bufferStream);
+    const int nbDataSrcLong = readBinary<int>(bufferStream);
     // number of variable on second line for an src event
-    const long nbDataSrcDouble = readBinary<long>(bufferStream);
+    const int nbDataSrcDouble = readBinary<int>(bufferStream);
     // number of variable on first line for an bank event
-    const long nbDataBnkLong = readBinary<long>(bufferStream);
+    const int nbDataBnkLong = readBinary<int>(bufferStream);
     // number of variable on second line for an bank event
-    const long nbDataBnkDouble = readBinary<long>(bufferStream);
+    const int nbDataBnkDouble = readBinary<int>(bufferStream);
     // number of variable on first line for an suf event
-    const long nbDataSufLong = readBinary<long>(bufferStream);
+    const int nbDataSufLong = readBinary<int>(bufferStream);
     // number of variable on second line for an suf event
-    const long nbDataSufDouble = readBinary<long>(bufferStream);
+    const int nbDataSufDouble = readBinary<int>(bufferStream);
     // number of variable on first line for an col event
-    const long nbDataColLong = readBinary<long>(bufferStream);
+    const int nbDataColLong = readBinary<int>(bufferStream);
     // number of variable on second line for an col event
-    const long nbDataColDouble = readBinary<long>(bufferStream);
+    const int nbDataColDouble = readBinary<int>(bufferStream);
     // number of variable on first line for an ter event
-    const long nbDataTerLong = readBinary<long>(bufferStream);
+    const int nbDataTerLong = readBinary<int>(bufferStream);
     // number of variable on second line for an ter event
-    const long nbDataTerDouble = readBinary<long>(bufferStream);
+    const int nbDataTerDouble = readBinary<int>(bufferStream);
     VariableIDNum idnum = VariableIDNum{nbDataNPS, nbDataSrcLong, nbDataSrcDouble,
                                         nbDataBnkLong, nbDataBnkDouble,
                                         nbDataSufLong, nbDataSufDouble,
@@ -146,15 +146,14 @@ void MCNPPTRACBinary::parseVariableIDs()
     bufferStream.str(buffer);
     bufferStream.clear();
 
-    // Skip over the NPS data line. For some reason these fields are written as
-    // longs.
+    // Skip over the NPS data line.
     for (int i = 0; i < nbDataNPS; ++i)
     {
-        reinterpretBuffer<long>(bufferStream); // variable ids on NPS lines
+        reinterpretBuffer<int>(bufferStream); // variable ids on NPS lines
     }
 
     // throw away variable id on event lines, int
-
+    // indices that we are interested in
     indices = EventIndices{ 0, // event type
                             5, // cell num
                             0, // x
@@ -184,7 +183,7 @@ void MCNPPTRACBinary::parsePTRACRecord()
     double tme = 0;
 
     std::string buffer = readRecord(ptracFile); // NPS line
-    std::tie(nps, event) = reinterpretBuffer<long, long>(buffer);
+    std::tie(nps, event) = reinterpretBuffer<int, int>(buffer);
     if (!isBnkEvent(event))
     {
         std::cout << "Event number: " << event << std::endl;
@@ -194,12 +193,12 @@ void MCNPPTRACBinary::parsePTRACRecord()
     ParticleHistory parHist = ParticleHistory();
     while (event != lastEvent)
     {
-        buffer = readRecord(ptracFile); // data line (all doubles, even though the
-                                        // first group are actually longs)
+        buffer = readRecord(ptracFile); // data line (all floats, even though the
+                                        // first group are actually ints)
         std::stringstream bufferStream(buffer);
         for (int i = 0; i < indices.idNum.nbDataBnkLong; ++i)
         {
-            const auto someLong = static_cast<long>(std::get<0>(reinterpretBuffer<double>(bufferStream)));
+            const auto someLong = static_cast<int>(std::get<0>(reinterpretBuffer<float>(bufferStream)));
             if (i == indices.event)
             {
                 oldEvent = event;
@@ -213,7 +212,7 @@ void MCNPPTRACBinary::parsePTRACRecord()
         }
         for (int i = 0; i < indices.idNum.nbDataSrcDouble; ++i)
         {
-            const auto someDouble = std::get<0>(reinterpretBuffer<double>(bufferStream));
+            const auto someDouble = std::get<0>(reinterpretBuffer<float>(bufferStream));
             if (i == indices.px)
             {
                 px = someDouble;

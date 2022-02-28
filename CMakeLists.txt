@@ -9,6 +9,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 option(ENABLE_UNIT_TESTS "Enable unit tests" ON)
 message(STATUS "Enable testing: ${ENABLE_UNIT_TESTS}")
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose Release or Debug" FORCE)
+endif ()
+message(STATUS "  Diag: Build type specified as '${CMAKE_BUILD_TYPE}'")
+
 if (ENABLE_UNIT_TESTS)
     # Import FetchContent module:
     include(FetchContent)

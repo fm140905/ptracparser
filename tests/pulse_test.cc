@@ -8,7 +8,7 @@ public:
     MCNPPTRAC *MCNPptrac;
     void SetUp()
     {
-        MCNPptrac = new MCNPPTRACBinary("/home/mingf2/projects/ptracparser/data/all_bin/job.mcnp62_seq-1631550441/ptrac");
+        MCNPptrac = new MCNPPTRACBinary("../../tests/data/MCNP6.2/ptrac");
     }
 
     void TearDown()
