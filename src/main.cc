@@ -3,7 +3,7 @@
  * @Author: Ming Fang
  * @Date: 2021-09-14 11:43:25
  * @LastEditors: Ming Fang
- * @LastEditTime: 2022-03-11 10:21:10
+ * @LastEditTime: 2022-07-28 00:07:54
  */
 #include <fstream>
 #include <string>
@@ -25,14 +25,14 @@ int main(int argc, char** argv)
 
     const std::string ptracFilePath(argv[1]);
     MCNPPTRACBinary ptracFile(ptracFilePath);
-    const int maxNum(1e8);
-    int pulseIdx(0);
+    const long maxNum(1e9);
+    long pulseIdx(0);
     std::vector<Pulse> pulses;
     // read pulses from file
-    int nps(0);
+    // int nps(0);
     while (ptracFile.readNextNPS(maxNum))
     {
-        if (ptracFile.getNPSRead() % 1000 == 0)
+        if (ptracFile.getNPSRead() % 1000000 == 0)
         {
             std::cout << "NPS = " << ptracFile.getNPSRead() << '\n';
         }

@@ -23,8 +23,15 @@ Pulse::Pulse(const ParticleHistory& parHist)
                 time = iter->time;
             }
             auto nextit = std::next(iter, 1);
-            endPos = nextit->pos;
-            energy += iter->energy - nextit->energy;
+            if (nextit != parHist.end())
+            {
+                endPos = nextit->pos;
+                energy += iter->energy - nextit->energy;
+            }
+            else
+            {
+                std::cout << "Record " << iter->nps << " does not end with eventID 5000.\n";
+            }
         }
     }
     if (energy > 0)
