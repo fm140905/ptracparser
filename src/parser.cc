@@ -156,7 +156,7 @@ void MCNPPTRACBinary::parseVariableIDs()
     // throw away variable id on event lines, int
 
     indices = EventIndices{ 0, // event type
-                            5, // cell num
+                            4, // cell num
                             0, // x
                             1, // y
                             2, // z
@@ -185,10 +185,10 @@ void MCNPPTRACBinary::parsePTRACRecord()
 
     std::string buffer = readRecord(ptracFile); // NPS line
     std::tie(nps, event) = reinterpretBuffer<long, long>(buffer);
-    if (!isBnkEvent(event))
+    if (!isTerEvent(event))
     {
         std::cout << "Event number: " << event << std::endl;
-        throw std::logic_error("expected bank event at the start of the history");
+        throw std::logic_error("expected termination event at the start of the history");
     }
 
     ParticleHistory parHist = ParticleHistory();
@@ -197,7 +197,7 @@ void MCNPPTRACBinary::parsePTRACRecord()
         buffer = readRecord(ptracFile); // data line (all doubles, even though the
                                         // first group are actually longs)
         std::stringstream bufferStream(buffer);
-        for (int i = 0; i < indices.idNum.nbDataBnkLong; ++i)
+        for (int i = 0; i < indices.idNum.nbDataTerLong; ++i)
         {
             const auto someLong = static_cast<long>(std::get<0>(reinterpretBuffer<double>(bufferStream)));
             if (i == indices.event)
@@ -211,7 +211,7 @@ void MCNPPTRACBinary::parsePTRACRecord()
             }
             // throw away the others
         }
-        for (int i = 0; i < indices.idNum.nbDataSrcDouble; ++i)
+        for (int i = 0; i < indices.idNum.nbDataTerDouble; ++i)
         {
             const auto someDouble = std::get<0>(reinterpretBuffer<double>(bufferStream));
             if (i == indices.px)
@@ -241,7 +241,7 @@ void MCNPPTRACBinary::parsePTRACRecord()
             // throw away the others
         }
         parHist.push_back(Event{nps, oldEvent, cell, {px,py,pz}, erg, wt, tme});
-        if (isBnkEvent(event) || event == lastEvent)
+        if (event == lastEvent)
         {
             npsHistory.push_back(parHist);
             parHist = ParticleHistory();
@@ -263,4 +263,9 @@ bool isBnkEvent(const long& id)
         return true;
     }
     return false;
+}
+
+bool isTerEvent(const long& id)
+{
+    return (id==5000);
 }

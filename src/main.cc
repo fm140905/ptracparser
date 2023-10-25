@@ -8,6 +8,8 @@
 #include <fstream>
 #include <string>
 #include <chrono>
+#include <iomanip>
+#include <algorithm>
 
 #include "parser.hh"
 #include "pulse.hh"
@@ -23,11 +25,12 @@ int main(int argc, char** argv)
         throw std::invalid_argument("Cannot create file: " + outpath);
     }
 
-    const std::string ptracFilePath(argv[1]);
+    // const std::string ptracFilePath(argv[1]);
+    const std::string ptracFilePath("/media/ming/Elements/multiplicity_test/BCS_NMC_1500/ptrac_parser/ptracparser/tests/testdata/v6/ptrac");
     MCNPPTRACBinary ptracFile(ptracFilePath);
     const long maxNum(1e9);
     long pulseIdx(0);
-    std::vector<Pulse> pulses;
+    std::vector<double> pulse_timestamps;
     // read pulses from file
     // int nps(0);
     while (ptracFile.readNextNPS(maxNum))
@@ -39,12 +42,17 @@ int main(int argc, char** argv)
         const NPSHistory record = ptracFile.getNPSHistory();
         for (auto iter = record.begin(); iter != record.end(); iter++)
         {
-            Pulse newPulse(*iter);
-            if (newPulse.energy <= 0)
-                continue;
-            // else, it is a vaild pulse
-            pulses.push_back(newPulse);
-            pulseIdx++;
+            for (auto iter2 = iter->cbegin(); iter2 != iter->cend(); iter2++)
+            {
+                // if cellID != 100, continue
+                if (iter2->cellID != 100)
+                    continue;
+                // else, it is a valid event
+                pulse_timestamps.push_back(iter2->time);
+                pulseIdx++;
+                if (pulseIdx >= maxNum)
+                    break;
+            }
             if (pulseIdx >= maxNum)
                 break;
         }
@@ -52,12 +60,14 @@ int main(int argc, char** argv)
             break;
     }
 
+    // sort timestamps
+    std::sort(pulse_timestamps.begin(), pulse_timestamps.end());
     // write header
-    outfile << "#    x1(cm)      y1(cm)      z1(cm)      x2(cm)      y2(cm)      z2(cm)    energy(MeV)        time(shakes)           nps\n";
+    outfile << "#    time(shakes)\n";
     // write pulses to file
-    for (int i = 0; i < pulses.size(); i++)
+    for (int i = 0; i < pulse_timestamps.size(); i++)
     {
-        outfile << pulses[i] << '\n';
+        outfile << std::fixed << std::setprecision(8) << pulse_timestamps[i] << '\n';
     }
     outfile.close();
 

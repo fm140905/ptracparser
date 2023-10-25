@@ -187,3 +187,5 @@ std::tuple<Ts...> reinterpretBuffer(std::string const &buffer)
 }
 
 bool isBnkEvent(const long& id);
+
+bool isTerEvent(const long& id);
