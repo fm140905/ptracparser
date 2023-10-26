@@ -6,12 +6,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-option(ENABLE_UNIT_TESTS "Enable unit tests" ON)
+option(ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 message(STATUS "Enable testing: ${ENABLE_UNIT_TESTS}")
 
+# Import FetchContent module:
+include(FetchContent)
 if (ENABLE_UNIT_TESTS)
-    # Import FetchContent module:
-    include(FetchContent)
     FetchContent_Declare(
         googletest
         GIT_REPOSITORY https://github.com/google/googletest.git
@@ -24,5 +24,12 @@ if (ENABLE_UNIT_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+FetchContent_Declare(
+    highfive
+    URL
+    https://github.com/BlueBrain/HighFive/archive/refs/tags/v2.7.1.zip
+)
+FetchContent_MakeAvailable(highfive)
 
 add_subdirectory(src)

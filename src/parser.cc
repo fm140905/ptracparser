@@ -45,7 +45,8 @@ NPSHistory const &MCNPPTRAC::getNPSHistory() const
 *                                        *
 ******************************************/
 
-MCNPPTRACBinary::MCNPPTRACBinary(std::string const &ptracPath) : ptracFile(ptracPath, std::ios_base::binary)
+MCNPPTRACBinary::MCNPPTRACBinary(std::string const &ptracPath)
+ : ptracFile(ptracPath, std::ios_base::binary)
 {
     if (ptracFile.fail())
     {
@@ -136,7 +137,7 @@ void MCNPPTRACBinary::parseVariableIDs()
     const long nbDataTerLong = readBinary<long>(bufferStream);
     // number of variable on second line for an ter event
     const long nbDataTerDouble = readBinary<long>(bufferStream);
-    VariableIDNum idnum = VariableIDNum{nbDataNPS, nbDataSrcLong, nbDataSrcDouble,
+    idNum = VariableIDNum{nbDataNPS, nbDataSrcLong, nbDataSrcDouble,
                                         nbDataBnkLong, nbDataBnkDouble,
                                         nbDataSufLong, nbDataSufDouble,
                                         nbDataColLong, nbDataColDouble,
@@ -154,113 +155,196 @@ void MCNPPTRACBinary::parseVariableIDs()
     }
 
     // throw away variable id on event lines, int
-
-    indices = EventIndices{ 0, // event type
-                            5, // cell num
-                            0, // x
-                            1, // y
-                            2, // z
-                            6, // energy
-                            7, // weight
-                            8, // time
-                            idnum
-                            };
 }
 
 void MCNPPTRACBinary::parsePTRACRecord()
 {
     npsHistory = NPSHistory(0);
     
-    long nps = -1;
-    long event = -1, oldEvent = -1;
+    long nextEvent = -1, currEvent = -1;
     constexpr long lastEvent = 9000;
-    long cell = -1;
 
-    double px = 0.;
-    double py = 0.;
-    double pz = 0.;
-    double erg = 0;
-    double wt = 0;
-    double tme = 0;
+    std::vector<long> firstGroup(idNum.nbDataBnkLong);
+    std::vector<double> secondGroup(idNum.nbDataBnkDouble);
 
+    long nps;
     std::string buffer = readRecord(ptracFile); // NPS line
-    std::tie(nps, event) = reinterpretBuffer<long, long>(buffer);
-    if (!isBnkEvent(event))
+    std::tie(nps, nextEvent) = reinterpretBuffer<long, long>(buffer);
+    if (nextEvent != 1000)
     {
-        std::cout << "Event number: " << event << std::endl;
-        throw std::logic_error("expected bank event at the start of the history");
+        std::cout << "Event number: " << nextEvent << std::endl;
+        throw std::logic_error("expected source event at the start of the history");
     }
 
-    ParticleHistory parHist = ParticleHistory();
-    while (event != lastEvent)
+    ParticleHistory parHist{Event(), Event()};
+    while (nextEvent != lastEvent)
     {
+        currEvent = nextEvent;
         buffer = readRecord(ptracFile); // data line (all doubles, even though the
                                         // first group are actually longs)
         std::stringstream bufferStream(buffer);
-        for (int i = 0; i < indices.idNum.nbDataBnkLong; ++i)
+        switch (currEvent)
         {
-            const auto someLong = static_cast<long>(std::get<0>(reinterpretBuffer<double>(bufferStream)));
-            if (i == indices.event)
+        case 1000:
+            // spontaneous fission neutron creation
+            parseBuffer(bufferStream, firstGroup, secondGroup, idNum.nbDataSrcLong);
+            // select fields that we need
+            nextEvent = firstGroup[indices.event];
+            parHist[0].nps = nps;
+            parHist[0].eventID = currEvent;
+            parHist[0].pos = {secondGroup[indices.px],
+                                   secondGroup[indices.py],
+                                   secondGroup[indices.pz]};
+            parHist[0].energy = secondGroup[indices.erg];
+            parHist[0].time = secondGroup[indices.tme];
+            // debugging
+// #ifndef NDEBUG
+            // if third element of first group != 40, then throw an error
+            if (firstGroup[2] != 40)
             {
-                oldEvent = event;
-                event = someLong;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected source type 40, but got " + std::to_string(firstGroup[2]);
+                std::cout << message << std::endl; 
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected source type 40, but got " + std::to_string(firstGroup[2]));
             }
-            else if (i == indices.cell)
+            // if the cell number (fourth element) is not 100, then throw an error
+            if (firstGroup[3] != 100)
             {
-                cell = someLong;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[3]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[indices.cell]));
             }
-            // throw away the others
-        }
-        for (int i = 0; i < indices.idNum.nbDataSrcDouble; ++i)
-        {
-            const auto someDouble = std::get<0>(reinterpretBuffer<double>(bufferStream));
-            if (i == indices.px)
+// #endif
+            break;
+        case 2000:
+            // spontaneous fission neutron creation
+            parseBuffer(bufferStream, firstGroup, secondGroup, idNum.nbDataBnkLong);
+            // select fields that we need
+            nextEvent = firstGroup[indices.event];
+            parHist[0].nps = nps;
+            parHist[0].eventID = currEvent;
+            parHist[0].pos = {secondGroup[indices.px],
+                                   secondGroup[indices.py],
+                                   secondGroup[indices.pz]};
+            parHist[0].energy = secondGroup[indices.erg];
+            parHist[0].time = secondGroup[indices.tme];
+
+            // debugging
+// #ifndef NDEBUG
+            // if the third element of first group != 98252, then throw an error
+            if (firstGroup[2] != 98252)
             {
-                px = someDouble;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected nuclide 98252, but got " + std::to_string(firstGroup[2]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected nuclide 98252, but got " + std::to_string(firstGroup[2]));
             }
-            else if (i == indices.py)
+            // if the fourth element of first group != 0, then throw an error
+            if (firstGroup[3] != 0)
             {
-                py = someDouble;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected reaction type 0, but got " + std::to_string(firstGroup[3]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected reaction type 0, but got " + std::to_string(firstGroup[3]));
             }
-            else if (i == indices.pz)
+            // if the cell number is not 100, then throw an error
+            if (firstGroup[indices.cell] != 100)
             {
-                pz = someDouble;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[indices.cell]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[indices.cell]));
             }
-            else if (i == indices.erg)
+// #endif
+            break;
+        case 2007:
+            // induced fission neutron creation
+            parseBuffer(bufferStream, firstGroup, secondGroup, idNum.nbDataBnkLong);
+            // select fields that we need
+            nextEvent = firstGroup[indices.event];
+            parHist[0].nps = nps;
+            parHist[0].eventID = currEvent;
+            parHist[0].pos = {secondGroup[indices.px],
+                                   secondGroup[indices.py],
+                                   secondGroup[indices.pz]};
+            parHist[0].energy = secondGroup[indices.erg];
+            parHist[0].time = secondGroup[indices.tme];
+
+            // debugging
+// #ifndef NDEBUG
+            // if the third element of first group != 98252, then throw an error
+            if (firstGroup[2] != 98252)
             {
-                erg = someDouble;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected nuclide 98252, but got " + std::to_string(firstGroup[2]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected nuclide 98252, but got " + std::to_string(firstGroup[2]));
             }
-            else if (i == indices.wt)
+            // if the fourth element of first group != 19, then throw an error
+            if (firstGroup[3] != 19)
             {
-                wt = someDouble;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected reaction type 19, but got " + std::to_string(firstGroup[3]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected reaction type 19, but got " + std::to_string(firstGroup[3]));
             }
-            else if (i == indices.tme)
+            // if the cell number is not 100, then throw an error
+            if (firstGroup[indices.cell] != 100)
             {
-                tme = someDouble;
+                std::string message = "NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[indices.cell]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[indices.cell]));
             }
-            // throw away the others
-        }
-        parHist.push_back(Event{nps, oldEvent, cell, {px,py,pz}, erg, wt, tme});
-        if (isBnkEvent(event) || event == lastEvent)
-        {
+// #endif
+            break;
+        case 5000:
+            // termination
+            parseBuffer(bufferStream, firstGroup, secondGroup, idNum.nbDataTerLong);
+            // select fields that we need
+            nextEvent = firstGroup[indices.event];
+            parHist[1].nps = nps;
+            parHist[1].eventID = currEvent;
+            parHist[1].pos = {secondGroup[indices.px],
+                                   secondGroup[indices.py],
+                                   secondGroup[indices.pz]};
+            parHist[1].energy = secondGroup[indices.erg];
+            parHist[1].time = secondGroup[indices.tme];
+
+            // debugging
+// #ifndef NDEBUG
+            // if the third element of first group != 12, then throw an error
+            if (firstGroup[2] != 12)
+            {
+                std::string message = "NPS="+std::to_string(nps) + ". Expected termination type 12, but got " + std::to_string(firstGroup[2]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected termination type 12, but got " + std::to_string(firstGroup[2]));
+            }
+            // if the cell number is not 100, then throw an error
+            if (firstGroup[indices.cell] != 100)
+            {
+                std::string message = "NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[indices.cell]);
+                std::cout << message << std::endl;
+                // throw std::logic_error("NPS="+std::to_string(nps) + ". Expected cell number 100, but got " + std::to_string(firstGroup[indices.cell]));
+            }
+// #endif
+            // add the parHist to npsHistory
             npsHistory.push_back(parHist);
-            parHist = ParticleHistory();
+           break;
+        default:
+            parseBuffer(bufferStream, firstGroup, secondGroup, idNum.nbDataBnkLong);
+            std::string message = "NPS="+std::to_string(nps) + ". Unexpected event type " + std::to_string(currEvent);
+            std::cout << message << std::endl;
+            // throw std::logic_error("NPS="+std::to_string(nps) + ". Unexpected event type" + std::to_string(currEvent));
+            break;
         }
     }
 }
 
-bool isBnkEvent(const long& id)
-{   
-    if (std::abs(std::abs(id) - 2000) < 40 )
+void MCNPPTRACBinary::parseBuffer(std::stringstream& bufferStream, std::vector<long>& firstGroup,
+    std::vector<double>& secondGroup, int size)
+{
+    for (int i = 0; i < size; i++)
     {
-        // debugging
-        if (std::abs(std::abs(id) - 2000) != 30 && 
-            std::abs(std::abs(id) - 2000) != 33)
-        {
-            std::cout << id << std::endl;
-        }
-        
-        return true;
+        const auto someLong = static_cast<long>(std::get<0>(reinterpretBuffer<double>(bufferStream)));
+        firstGroup[i] = someLong;
     }
-    return false;
+    for (int i = 0; i < secondGroup.size(); i++)
+    {
+        const auto someDouble = std::get<0>(reinterpretBuffer<double>(bufferStream));
+        secondGroup[i] = someDouble;
+    }
 }

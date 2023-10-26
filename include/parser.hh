@@ -19,22 +19,22 @@
 #include <utility>
 #include <vector>
 #include <list>
+#include <array>
 
 struct Event {
-  long nps, eventID;
-  long cellID;
-  std::vector<double> pos;
+  long nps;
+  long eventID;
+  std::array<double,3> pos;
   double energy;
-  double weight;
   double time;
 };
 
 /**
  * @brief class of a single particle's history.
- * consists of multiple events.
+ * consists of two events.
  * 
  */
-typedef std::list<Event> ParticleHistory;
+typedef std::vector<Event> ParticleHistory;
 
 /**
  * @brief class of all particles' histories in one nps simulation.
@@ -58,7 +58,6 @@ struct VariableIDNum {
 
 struct EventIndices {
   int event, cell, px, py, pz, erg, wt, tme;
-  VariableIDNum idNum;
 };
 
 class MCNPPTRAC
@@ -93,7 +92,18 @@ class MCNPPTRACBinary : public MCNPPTRAC
 {
 protected:
   std::ifstream ptracFile;
-  EventIndices indices;
+  static constexpr EventIndices indices=EventIndices{0, // event type
+                                                     4, // cell num
+                                                     0, // x
+                                                     1, // y
+                                                     2, // z
+                                                     6, // energy
+                                                     7, // weight
+                                                     8, // time
+                                                    };
+  VariableIDNum idNum;
+  void parseBuffer(std::stringstream& bufferStream, std::vector<long>& firstGroup,
+    std::vector<double>& secondGroup, int size);
 
 public:
   /**
