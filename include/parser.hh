@@ -21,26 +21,40 @@
 #include <list>
 #include <array>
 
-struct Event {
-  long nps;
-  long eventID;
-  std::array<double,3> pos;
-  double energy;
-  double time;
-};
+#include "st_tree/st_tree.h"
 
-/**
- * @brief class of a single particle's history.
- * consists of two events.
- * 
- */
-typedef std::vector<Event> ParticleHistory;
+#define IF_REACTION 0
+#define SF_REACTION 1
+#define N2N_REACTION 2
+#define B10_CAPTURE 3
+#define H1_CAPTURE 4
+#define CF252_CAPTURE 5
+#define N3N_REACTION 6
+// #define 
+
+
+struct NeutronHistory {
+  long nps;
+  int creation_reaction; // 0 for IF, 1 for SF, 2 for (n,2n)
+  // long creation_event_ID;
+  std::array<double,3> creation_pos;
+  double creation_energy;
+  double creation_time;
+
+  int destruction_type; // 0 for IF, 1 for SF (impossible), 2 for (n,2n), 
+  // long destruction_event_ID;
+  std::array<double,3> destruction_pos;
+  double destruction_energy;
+  double destruction_time;
+  // 3 for B-10 capture, 4 for H-1 capture 
+};
 
 /**
  * @brief class of all particles' histories in one nps simulation.
  * 
  */
-typedef std::vector<ParticleHistory> NPSHistory;
+typedef st_tree::tree<NeutronHistory> NPSHistory;
+typedef st_tree::tree<NeutronHistory>::iterator NPSHistoryIterator;
 
 struct VariableIDNum {
   long nbDataNPS;
@@ -104,6 +118,7 @@ protected:
   VariableIDNum idNum;
   void parseBuffer(std::stringstream& bufferStream, std::vector<long>& firstGroup,
     std::vector<double>& secondGroup, int size);
+  void _add_neutron(const NeutronHistory &neutron);
 
 public:
   /**
